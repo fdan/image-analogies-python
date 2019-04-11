@@ -29,17 +29,22 @@ def compute_feature_array(im_pyr, c, full_feat):
 
         # discard second half of larger feature vector
         if not full_feat:
-            patches_lg = patches_lg.reshape(patches_lg.shape[0], -1)[:, :c.num_ch * c.n_half]
+            patches_lg = patches_lg.reshape(patches_lg.shape[0], -1)[:, :int(c.num_ch * c.n_half)]
 
         # concatenate small and large patches
         level_features = []
         imh, imw = im_pyr[level].shape[:2]
         for row in range(imh):
             for col in range(imw):
-                level_features.append(np.hstack([
-                    patches_sm[np.floor(row/2.) * np.ceil(imw/2.) + np.floor(col/2.)].flatten(),
-                    patches_lg[row * imw + col].flatten()
-                ]))
+
+                patch_sm_ind = int(np.floor(row/2.) * np.ceil(imw/2.) + np.floor(col/2.))
+                patch_sm = patches_sm[patch_sm_ind].flatten()
+
+                patch_lg_ind = int(row * imw + col)
+                patch_lg = patches_lg[patch_lg_ind].flatten()
+
+                nphst = np.hstack([patch_sm, patch_lg])
+                level_features.append(nphst)
 
         assert(len(level_features) == imh * imw)
 
@@ -76,15 +81,22 @@ def extract_pixel_feature((im_sm_padded, im_lg_padded), (row, col), c, full_feat
 
     # first extract full feature vector
     # since the images are padded, we need to add the padding to our indexing
-    px_feat = np.hstack([im_sm_padded[np.floor(row/2.) : np.floor(row/2.) + 2 * c.pad_sm + 1, \
-                                      np.floor(col/2.) : np.floor(col/2.) + 2 * c.pad_sm + 1].flatten(),
-                         im_lg_padded[row : row + 2 * c.pad_lg + 1,
-                                      col : col + 2 * c.pad_lg + 1].flatten()])
+
+    a = int(np.floor(row / 2.))
+    b = int(np.floor(col / 2.))
+    c_ = int(c.pad_sm)
+    sm = im_sm_padded[a: a + 2 * c_ + 1, b: b + 2 * c_ + 1].flatten()
+
+    d = int(c.pad_lg)
+    lg = im_lg_padded[row: row + 2 * d + 1, col: col + 2 * d + 1].flatten()
+
+    px_feat = np.hstack([sm, lg])
+
     if full_feat:
         return px_feat
     else:
         # only keep c.n_half pixels from second level
-        return px_feat[:c.num_ch * ((c.n_sm * c.n_sm) + c.n_half)]
+        return px_feat[:int(c.num_ch * ((c.n_sm * c.n_sm) + c.n_half))]
 
 
 def best_coherence_match(A_pd, Ap_pd, BBp_feat, s, (row, col, Bp_w), c):

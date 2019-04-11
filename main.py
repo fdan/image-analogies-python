@@ -1,3 +1,9 @@
+#! /home/dan/anaconda2/bin/python
+
+import os
+import sys
+
+
 import numpy as np
 from numpy.random import randint
 import matplotlib.pyplot as plt
@@ -9,7 +15,9 @@ from texture_analogies import pad_img, create_index, extract_pixel_feature, best
 import config as c
 
 
-if __name__ == '__main__':
+def main():
+
+    print sys.executable
 
     # argv = sys.argv
     #
@@ -48,12 +56,10 @@ if __name__ == '__main__':
     assert(len(A_orig.shape) == len(B_orig.shape)) # same number of channels
 
     # This is all the setup code
-
     begin_time = time.time()
     start_time = time.time()
 
     # Do conversions
-
     if c.convert:
         A_yiq  = convert_to_YIQ( A_orig/255.)
         Ap_yiq = convert_to_YIQ(Ap_orig/255.)
@@ -69,11 +75,9 @@ if __name__ == '__main__':
     c.num_ch, c.padding_sm, c.padding_lg, c.weights = c.setup_vars(A)
 
     # Remap Luminance
-
     A, Ap = remap_luminance(A, Ap, B)
 
     # Create Pyramids
-
     A_pyr  = compute_gaussian_pyramid( A, c.n_sm)
     Ap_pyr = compute_gaussian_pyramid(Ap, c.n_sm)
     B_pyr  = compute_gaussian_pyramid( B, c.n_sm)
@@ -161,6 +165,7 @@ if __name__ == '__main__':
                 # is this the first iteration for this level?
                 # then skip coherence step
                 #if len(s) < 1:
+                # dan: this looks wrong?
                 if True:
                     p = p_app
                     #p = (randint(Ap_imh), randint(Ap_imw))
@@ -208,6 +213,16 @@ if __name__ == '__main__':
 
         # Save debugging structures
 
+        try:
+            print 'os.makedirs(%s)' % out_path
+            os.makedirs(out_path)
+        except:
+            pass
+
+        if not os.path.isdir(out_path):
+            print "output dir could not be created, halting"
+            return
+
         for path, var in zip(paths, vars):
             plt.figure()
             plt.imshow(var, interpolation='nearest', cmap='gray')
@@ -226,3 +241,7 @@ if __name__ == '__main__':
     end_time = time.time()
     print 'Total time: %f' % (end_time - begin_time)
     print('ANN time: %f' % ann_time_total)
+
+
+if __name__ == '__main__':
+    main()
